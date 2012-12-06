@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from numpy import cos, sin, pi, arctan2
+from numpy import cos, sin, pi, arctan2, sqrt
 from numpy.random import random as rand
 import numpy as np
 import cairo,Image
@@ -11,18 +11,18 @@ from operator import itemgetter
 
 PI    = pi
 PII   = 2*pi
-N     = 21000
+N     = 18000
 BACK  = 1.
 FRONT = 0.
 ALPHA = 0.05
-OUT   = './xx/hyphae.xx10.'
+OUT   = './atmp'
 
-R     = 7./N;
+R     = 9./N;
 R2    = 2*R;
 RR9   = 2*R*R;
 GRAINS= 10
 
-ZONES = 210
+ZONES = 180
 
 def stroke(x,y):
   ctx.rectangle(x,y,1./N,1./N)
@@ -74,59 +74,63 @@ def run(num,X,Y,THE,Z):
   
   itt = 0
   ti = time()
+  drawn = -1
   while True:
     itt += 1
 
-    k = int(rand()*num)
+    k = int(sqrt(rand())*num)
     the = (PI*(0.5-rand()))+THE[k];
     x = X[k] + sin(the)*R2;
     y = Y[k] + cos(the)*R2;
 
-    inds = nearZoneInds(x,y,Z)
-    if len(inds)>0:
-      """ old
-      nx = X[0:num] - x
-      ny = Y[0:num] - y
-      good = not (nx**2 + ny**2 < RR9).any()
-      """
+    i = 1+int(x*ZONES) 
+    j = 1+int(y*ZONES) 
+    ij = np.array([i-1,i,i+1,i-1,i,i+1,i-1,i,i+1])*ZONES+\
+         np.array([j+1,j+1,j+1,j,j,j,j-1,j-1,j-1])
 
-      nx = X[inds] - x
-      ny = Y[inds] - y
-      good = not (nx**2 + ny**2 < RR9).any()
-    
+    good = True
+    for p in ij:
+      inds = Z[p]
+      if len(inds)>0:
+        nx = X[inds] - x
+        ny = Y[inds] - y
+        if (nx**2 + ny**2 < RR9).any():
+          good = False
+          break
       
-      if good: 
-        X[num] = x
-        Y[num] = y
-        THE[num] = the
+    if good: 
+      X[num] = x
+      Y[num] = y
+      THE[num] = the
 
-        i = 1+int(x*ZONES) 
-        j = 1+int(y*ZONES) 
-        ij = i*ZONES+j
-        Z[ij].append(num)
-        
-        ctx.set_source_rgb(FRONT,FRONT,FRONT)
-        ctx.move_to(x,y)
-        ctx.line_to(X[k],Y[k])
-        ctx.stroke()
-        num+=1
+      i = 1+int(x*ZONES) 
+      j = 1+int(y*ZONES) 
+      ij = i*ZONES+j
+      Z[ij].append(num)
+      
+      ctx.set_source_rgb(FRONT,FRONT,FRONT)
+      ctx.move_to(x,y)
+      ctx.line_to(X[k],Y[k])
+      ctx.stroke()
+      num+=1
 
-      else:
-        r,g,b = colors[k%ncolors]
-        ctx.set_source_rgba(r,g,b,ALPHA)
-        dx = X[k] - x
-        dy = Y[k] - y
-        a = arctan2(dy,dx)
-        scales = rand(GRAINS)*R2
-        xp = X[k] - scales*cos(a)
-        yp = Y[k] - scales*sin(a)
+    else:
+      r,g,b = colors[k%ncolors]
+      ctx.set_source_rgba(r,g,b,ALPHA)
+      dx = X[k] - x
+      dy = Y[k] - y
+      a = arctan2(dy,dx)
+      scales = rand(GRAINS)*R2
+      xp = X[k] - scales*cos(a)
+      yp = Y[k] - scales*sin(a)
 
-        vstroke(xp,yp)
+      vstroke(xp,yp)
 
-    if not itt % 100000:
-      sur.write_to_png('{:s}.{:d}.png'.format(OUT,itt,num))
+    if not num % 5000 and not num==drawn:
+      sur.write_to_png('{:s}.{:d}.png'.format(OUT,num))
       print itt, num, time()-ti
       ti = time()
+      drawn = num
 
       
 def main():
