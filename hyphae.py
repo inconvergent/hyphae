@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from numpy import cos, sin, pi, arctan2, sqrt
+from numpy import cos, sin, pi, arctan2, sqrt, square, int
 from numpy.random import random as rand
 import numpy as np
 import cairo,Image
@@ -15,14 +15,14 @@ N     = 18000
 BACK  = 1.
 FRONT = 0.
 ALPHA = 0.05
-OUT   = './atmp'
+OUT   = './xx/hyphae.new'
 
 R     = 9./N;
 R2    = 2*R;
 RR9   = 2*R*R;
-GRAINS= 10
+GRAINS= 20
 
-ZONES = 180
+ZONES = 200
 
 def stroke(x,y):
   ctx.rectangle(x,y,1./N,1./N)
@@ -82,21 +82,15 @@ def run(num,X,Y,THE,Z):
     the = (PI*(0.5-rand()))+THE[k];
     x = X[k] + sin(the)*R2;
     y = Y[k] + cos(the)*R2;
-
-    i = 1+int(x*ZONES) 
-    j = 1+int(y*ZONES) 
-    ij = np.array([i-1,i,i+1,i-1,i,i+1,i-1,i,i+1])*ZONES+\
-         np.array([j+1,j+1,j+1,j,j,j,j-1,j-1,j-1])
-
+    
+    inds = nearZoneInds(x,y,Z)
     good = True
-    for p in ij:
-      inds = Z[p]
-      if len(inds)>0:
-        nx = X[inds] - x
-        ny = Y[inds] - y
-        if (nx**2 + ny**2 < RR9).any():
-          good = False
-          break
+    if len(inds)>0:
+      nx = X[inds] - x
+      ny = Y[inds] - y
+      mask = (square(nx) + square(ny)) < RR9
+      if any(mask):
+        good = False
       
     if good: 
       X[num] = x
