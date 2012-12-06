@@ -15,12 +15,12 @@ N     = 21000
 BACK  = 1.
 FRONT = 0.
 ALPHA = 0.05
-OUT   = './xx/hyphae.xx'
+OUT   = './xx/hyphae.xx10.'
 
 R     = 7./N;
 R2    = 2*R;
 RR9   = 2*R*R;
-GRAINS= 20
+GRAINS= 10
 
 ZONES = 210
 
