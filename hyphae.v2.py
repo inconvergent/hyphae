@@ -11,21 +11,30 @@ from operator import itemgetter
 
 PI    = pi
 PII   = 2*pi
-N     = 18000
+N     = 5000
+ONE   = 1./N
 BACK  = 1.
 FRONT = 0.
-ALPHA = 0.07
-OUT   = '/a.0100'
+MID   = 0.5
+ALPHA = 0.2
+OUT   = './v2.0000'
 
 R     = 9./N;
 R2    = 2*R;
 RR9   = 2*R*R;
+CR    = R/2.
 GRAINS= 25
 
-ZONES = 180
+ZONES = 100
+
+def circ(x,y,cr):
+  ctx.arc(x,y,cr,0,PII)
+  ctx.fill()
+  return
+vcirc = np.vectorize(circ)
 
 def stroke(x,y):
-  ctx.rectangle(x,y,1./N,1./N)
+  ctx.rectangle(x,y,ONE,ONE)
   ctx.fill()
   return
 vstroke = np.vectorize(stroke)
@@ -44,7 +53,7 @@ def getColors(f):
       res[key] = (r/scale,g/scale,b/scale)
   res = [value for key,value in res.iteritems()]
   return res
-colors = getColors('../orbitals/resources/colors5.gif')
+colors = getColors('../orbitals/resources/colors2.gif')
 ncolors = len(colors)
 
 def ctxInit():
@@ -89,8 +98,7 @@ def run(num,X,Y,THE,Z):
       nx = X[inds] - x
       ny = Y[inds] - y
       mask = (square(nx) + square(ny)) < RR9
-      if any(mask):
-        good = False
+      good = not any(mask)
       
     if good: 
       X[num] = x
@@ -102,30 +110,38 @@ def run(num,X,Y,THE,Z):
       ij = i*ZONES+j
       Z[ij].append(num)
       
-      ctx.set_source_rgb(FRONT,FRONT,FRONT)
-      ctx.move_to(x,y)
-      ctx.line_to(X[k],Y[k])
-      ctx.stroke()
-      num+=1
-
-    else:
-      #r,g,b = colors[k%ncolors]
-      r,g,b = (0.,0.,0.)
-      ctx.set_source_rgba(r,g,b,ALPHA)
+      ctx.set_source_rgba(FRONT,FRONT,FRONT)
       dx = X[k] - x
       dy = Y[k] - y
       a = arctan2(dy,dx)
-      scales = rand(GRAINS)*R2
+      scales = rand(10)*R2
       xp = X[k] - scales*cos(a)
       yp = Y[k] - scales*sin(a)
+      cr = (0.5+0.6*rand(10))*CR
 
-      vstroke(xp,yp)
+      vcirc(xp,yp,cr)
+      ctx.fill()
 
-    if not num % 50000 and not num==drawn:
+      num+=1
+    #else:
+      #r,g,b = colors[k%ncolors]
+      #ctx.set_source_rgba(r,g,b,ALPHA)
+      #dx = X[k] - x
+      #dy = Y[k] - y
+      #a = arctan2(dy,dx)
+      #scales = rand(GRAINS)*R2
+      #xp = X[k] - scales*cos(a)
+      #yp = Y[k] - scales*sin(a)
+
+      #vstroke(xp,yp)
+      
+    if not num % 5000 and not num==drawn:
       sur.write_to_png('{:s}.{:d}.png'.format(OUT,num))
       print itt, num, time()-ti
       ti = time()
       drawn = num
+
+  sur.write_to_png('{:s}.png'.format(OUT))
 
       
 def main():
