@@ -22,7 +22,9 @@ OUT   = './v2.0000'
 R     = 9./N;
 R2    = 2*R;
 RR9   = 2*R*R;
-CR    = R/2.
+CR    = R/4.
+
+CRN   = 15
 GRAINS= 25
 
 ZONES = 100
@@ -53,8 +55,10 @@ def getColors(f):
       res[key] = (r/scale,g/scale,b/scale)
   res = [value for key,value in res.iteritems()]
   return res
-colors = getColors('../orbitals/resources/colors2.gif')
-ncolors = len(colors)
+#colors = getColors('../orbitals/resources/colors2.gif')
+#ncolors = len(colors)
+colors = [(0.,0.2,0.9)] #purple-ish
+ncolors = 1
 
 def ctxInit():
   sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,N,N)
@@ -79,8 +83,9 @@ def nearZoneInds(x,y,Z):
   return inds
 
 
-def run(num,X,Y,THE,Z):
+def run(X,Y,THE,Z):
   
+  num = 1
   itt = 0
   ti = time()
   drawn = -1
@@ -107,33 +112,32 @@ def run(num,X,Y,THE,Z):
 
       i = 1+int(x*ZONES) 
       j = 1+int(y*ZONES) 
-      ij = i*ZONES+j
-      Z[ij].append(num)
+      Z[i*ZONES+j].append(num)
       
       ctx.set_source_rgba(FRONT,FRONT,FRONT)
+      dx = X[k]-x
+      dy = Y[k]-y
+      a = arctan2(dy,dx)
+      scales = rand(CRN)*R2
+      xp = X[k] - scales*cos(a)
+      yp = Y[k] - scales*sin(a)
+      cr = (0.5+0.6*rand(CRN))*CR
+
+      vcirc(xp,yp,cr)
+
+      num+=1
+
+    else:
+      r,g,b = colors[k%ncolors]
+      ctx.set_source_rgba(r,g,b,ALPHA)
       dx = X[k] - x
       dy = Y[k] - y
       a = arctan2(dy,dx)
-      scales = rand(10)*R2
+      scales = rand(GRAINS)*R2
       xp = X[k] - scales*cos(a)
       yp = Y[k] - scales*sin(a)
-      cr = (0.5+0.6*rand(10))*CR
 
-      vcirc(xp,yp,cr)
-      ctx.fill()
-
-      num+=1
-    #else:
-      #r,g,b = colors[k%ncolors]
-      #ctx.set_source_rgba(r,g,b,ALPHA)
-      #dx = X[k] - x
-      #dy = Y[k] - y
-      #a = arctan2(dy,dx)
-      #scales = rand(GRAINS)*R2
-      #xp = X[k] - scales*cos(a)
-      #yp = Y[k] - scales*sin(a)
-
-      #vstroke(xp,yp)
+      vstroke(xp,yp)
       
     if not num % 5000 and not num==drawn:
       sur.write_to_png('{:s}.{:d}.png'.format(OUT,num))
@@ -145,11 +149,9 @@ def run(num,X,Y,THE,Z):
 
       
 def main():
-
+  
   ctx.set_line_width(2./N)
 
-  num = 1
- 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
   nmax = 2*1e7
@@ -166,7 +168,7 @@ def main():
   ij = i*ZONES+j
   Z[ij].append(0)
 
-  run(num,X,Y,THE,Z)
+  run(X,Y,THE,Z)
 
   return
 
