@@ -96,7 +96,7 @@ def main():
 
     k    = int(sqrt(rand())*num)
     the  = ( PI*( 0.5-rand() ) )+THE[k];
-    r    = RAD  + rand()*ONE*4.
+    r    = RAD  + rand()*ONE*10.
     x    = X[k] + sin(the)*r;
     y    = Y[k] + cos(the)*r;
 
