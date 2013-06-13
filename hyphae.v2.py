@@ -10,12 +10,12 @@ def main():
   from time import time as time
   from operator import itemgetter
 
-  any = np.any
-  all = np.all
+  any   = np.any
+  all   = np.all
 
   PI    = pi
   PII   = 2*pi
-  N     = 5000
+  N     = 4000
   ONE   = 1./N
   BACK  = 1.
   FRONT = 0.
@@ -23,31 +23,12 @@ def main():
   ALPHA = 0.2
   OUT   = './img'
 
-  R     = 9./N;
-  R2    = 2*R;
+  RAD   = 3./N;
 
-  ZONES = 200
+  ZONES = 400
 
-  #def stroke(x,y):
-    #ctx.rectangle(x,y,ONE,ONE)
-    #ctx.fill()
-    #return
-  #vstroke = np.vectorize(stroke)
+  OBJECTS = 5
 
-  #def get_colors(f):
-    #scale = 255.
-    #im = Image.open(f)
-    #w,h = im.size
-    #rgbim = im.convert('RGB')
-    #res = {}
-    #for i in xrange(w):
-      #for j in xrange(h):
-        #r,g,b = rgbim.getpixel((i,j))
-        #key = '{:03d}{:03d}{:03d}'\
-          #.format(r,g,b)
-        #res[key] = (r/scale,g/scale,b/scale)
-    #res = [value for key,value in res.iteritems()]
-    #return res
   colors = [(0,0,0)]
   ncolors = 1
 
@@ -79,18 +60,29 @@ def main():
   Z = [[] for i in xrange((ZONES+2)**2)]
 
   nmax = 2*1e7
+  R   = np.zeros(nmax,dtype=np.float)
   X   = np.zeros(nmax,dtype=np.float)
   Y   = np.zeros(nmax,dtype=np.float)
   THE = np.zeros(nmax,dtype=np.float)
 
+
   X[0]   = 0.5
   Y[0]   = 0.5
-  THE[0] = 0.
+  THE[0] = RAD
 
   i = 1+int(0.5*ZONES) 
   j = 1+int(0.5*ZONES) 
   ij = i*ZONES+j
   Z[ij].append(0)
+
+  OR = np.zeros(OBJECTS,dtype=np.float)
+  OX = np.zeros(OBJECTS,dtype=np.float)
+  OY = np.zeros(OBJECTS,dtype=np.float)
+
+  for i in xrange(OBJECTS):
+    OR[i] = ONE*200
+    OX[i] = rand()
+    OY[i] = rand()
 
   num = 1
   itt = 0
@@ -102,10 +94,20 @@ def main():
   while True:
     itt += 1
 
-    k    = int(rand()*num)
-    the  = (PI*(0.5-rand()))+THE[k];
-    x    = X[k] + sin(the)*R2;
-    y    = Y[k] + cos(the)*R2;
+    k    = int(sqrt(rand())*num)
+    the  = ( PI*( 0.5-rand() ) )+THE[k];
+    r    = RAD  + rand()*ONE*4.
+    x    = X[k] + sin(the)*r;
+    y    = Y[k] + cos(the)*r;
+
+    #dd = square( OX-x ) + \
+         #square( OY-y )
+    #sqrt(dd,dd)
+    #mask = dd*2 < OR 350
+    #blocked_by_object = mask.any()
+
+    #if blocked_by_object:
+      #continue
     
     inds = near_zone_inds(x,y,Z)
     good = True
@@ -114,12 +116,14 @@ def main():
            square( Y[inds]-y )
 
       sqrt(dd,dd)
-      mask = dd<sqrt(2*R*R)
-      good = not any(mask)
+      mask = dd*2 >= R[inds] + r
+      good = mask.all()
+
       
     if good: 
       X[num]   = x
       Y[num]   = y
+      R[num]   = r
       THE[num] = the
 
       i = 1+int(x*ZONES) 
@@ -143,11 +147,3 @@ def main():
 if __name__ == '__main__':
   main()
 
-#dx = X[k]-x
-#dy = Y[k]-y
-#a = arctan2(dy,dx)
-#scales = rand(CRN)*R2
-#xp = X[k] - scales*cos(a)
-#yp = Y[k] - scales*sin(a)
-#cr = (0.5+0.6*rand(CRN))*CR
-#vcirc(xp,yp,cr)
