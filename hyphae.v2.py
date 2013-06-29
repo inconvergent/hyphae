@@ -3,7 +3,7 @@
 
 def main():
 
-  from numpy import cos, sin, pi, arctan2, sqrt, square, int
+  from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace
   from numpy.random import random as rand
   import numpy as np
   import cairo,Image
@@ -31,6 +31,11 @@ def main():
 
   colors = [(0,0,0)]
   ncolors = 1
+
+  def stroke(x,y): 
+    ctx.rectangle(x,y,ONE,ONE) 
+    ctx.fill() 
+  vstroke = np.vectorize(stroke) 
 
   def ctx_init():
     sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,N,N)
@@ -79,10 +84,10 @@ def main():
   OX = np.zeros(OBJECTS,dtype=np.float)
   OY = np.zeros(OBJECTS,dtype=np.float)
 
-  for i in xrange(OBJECTS):
-    OR[i] = ONE*200
-    OX[i] = rand()
-    OY[i] = rand()
+  #for i in xrange(OBJECTS):
+    #OR[i] = ONE*200
+    #OX[i] = rand()
+    #OY[i] = rand()
 
   num = 1
   itt = 0
@@ -130,9 +135,19 @@ def main():
       j = 1+int(y*ZONES) 
       Z[i*ZONES+j].append(num)
       
-      ctx.move_to(X[k],Y[k])
-      ctx.line_to(x,y)
-      ctx.stroke()
+      #ctx.move_to(X[k],Y[k])
+      #ctx.line_to(x,y)
+      #ctx.stroke()
+      
+      dx = X[k]-x
+      dy = Y[k]-y
+      a = arctan2(dy,dx)
+      dots = 2*int(r*N)
+      scales = linspace(0,r,dots)
+      xp = X[k] - scales*cos(a) + rand(dots)*ONE*2.
+      yp = Y[k] - scales*sin(a) + rand(dots)*ONE*2.
+
+      vstroke(xp,yp)
 
       num+=1
       
