@@ -18,13 +18,14 @@ ONE = 1./N
 BACK = 1.
 FRONT = 0.
 MID = 0.5
-ALPHA = 0.2
+ALPHA = 0.05
 
 filename = './img'
 
 RAD = 3./N;
 
 ZONES = 400
+GRAINS = 5
 
 print
 print 'filename',filename
@@ -157,19 +158,19 @@ def main():
         #vstroke(xp,yp)
 
         num+=1
-      #else:
+      else:
 
 
-        #dx = X[k] - x
-        #dy = Y[k] - y
-        #a = arctan2(dy,dx)
-        #scales = rand(GRAINS)*r
-        #xp = X[k] - scales*cos(a)
-        #yp = Y[k] - scales*sin(a)
+        dx = X[k] - x
+        dy = Y[k] - y
+        a = arctan2(dy,dx)
+        scales = rand(GRAINS)*r
+        xp = X[k] - scales*cos(a)
+        yp = Y[k] - scales*sin(a)
 
-        #r,g,b = colors[k%ncolors]
-        #ctx.set_source_rgba(r,g,b,ALPHA)
-        #vstroke(xp,yp)
+        r,g,b = colors[k%ncolors]
+        ctx.set_source_rgba(r,g,b,ALPHA)
+        vstroke(xp,yp)
         
       if not num % 1000 and not num==drawn:
         sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
