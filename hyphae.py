@@ -79,14 +79,15 @@ def main():
   ij = i*ZONES+j
   Z[ij].append(0)
 
-  OR = np.zeros(OBJECTS,dtype=np.float)
-  OX = np.zeros(OBJECTS,dtype=np.float)
-  OY = np.zeros(OBJECTS,dtype=np.float)
+  ## blocking objects
+  #OR = np.zeros(OBJECTS,dtype=np.float)
+  #OX = np.zeros(OBJECTS,dtype=np.float)
+  #OY = np.zeros(OBJECTS,dtype=np.float)
 
-  for i in xrange(OBJECTS):
-    OR[i] = ONE*200
-    OX[i] = rand()
-    OY[i] = rand()
+  #for i in xrange(OBJECTS):
+    #OR[i] = ONE*200
+    #OX[i] = rand()
+    #OY[i] = rand()
 
   num = 1
   itt = 0
@@ -104,14 +105,15 @@ def main():
       x = X[k] + sin(the)*r;
       y = Y[k] + cos(the)*r;
 
-      dd = square(OX-x) + \
-           square(OY-y)
-      sqrt(dd,dd)
-      mask = dd*2 < OR
-      blocked_by_object = mask.any()
+      ## see if edge is blocked
+      #dd = square(OX-x) + \
+           #square(OY-y)
+      #sqrt(dd,dd)
+      #mask = dd*2 < OR
+      #blocked_by_object = mask.any()
 
-      if blocked_by_object:
-        continue
+      #if blocked_by_object:
+        #continue
       
       inds = near_zone_inds(x,y,Z)
 
