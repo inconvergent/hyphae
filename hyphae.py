@@ -4,7 +4,7 @@
 from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace
 from numpy.random import random as rand
 import numpy as np
-import cairo,Image
+import cairo
 from time import time as time
 from operator import itemgetter
 
@@ -20,7 +20,7 @@ FRONT = 0.
 MID = 0.5
 ALPHA = 0.05
 
-filename = './img'
+filename = 'res/img'
 
 RAD = 3./N;
 
@@ -32,40 +32,80 @@ print 'filename',filename
 print 'N', N
 print 'one', ONE
 
-def stroke(x,y): 
-  ctx.rectangle(x,y,ONE,ONE) 
-  ctx.fill() 
-vstroke = np.vectorize(stroke) 
 
-def ctx_init():
-  sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,N,N)
-  ctx = cairo.Context(sur)
-  ctx.scale(N,N)
-  ctx.set_source_rgb(BACK,BACK,BACK)
-  ctx.rectangle(0,0,1,1)
-  ctx.fill()
-  return sur,ctx
-sur,ctx = ctx_init()
+class Render(object):
 
-def get_colors(f):
-  from random import shuffle
-  scale = 1./255.
-  im = Image.open(f)
-  w,h = im.size
-  rgbim = im.convert('RGB')
-  res = []
-  for i in xrange(0,w):
-    for j in xrange(0,h):
-      r,g,b = rgbim.getpixel((i,j))
-      res.append((r*scale,g*scale,b*scale))
+  def __init__(self,n):
 
-  shuffle(res)
+    sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,n,n)
+    ctx = cairo.Context(sur)
+    ctx.scale(n,n)
+    ctx.set_source_rgb(BACK,BACK,BACK)
+    ctx.rectangle(0,0,1,1)
+    ctx.fill()
 
-  return res
-colors = get_colors('color/dark_cyan_white_black.gif')
-ncolors = len(colors)
-print 'colors',  ncolors
-print
+    self.sur = sur
+    self.ctx = ctx
+
+  def get_colors(self,f):
+    
+    import Image
+    from random import shuffle
+
+    scale = 1./255.
+    im = Image.open(f)
+    w,h = im.size
+    rgbim = im.convert('RGB')
+    res = []
+    for i in xrange(0,w):
+      for j in xrange(0,h):
+        r,g,b = rgbim.getpixel((i,j))
+        res.append((r*scale,g*scale,b*scale))
+
+    shuffle(res)
+
+    self.colors = res
+    self.ncolors = len(res)
+
+  def render_lines(self,x1,y1,x2,y2):
+
+    self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
+    self.ctx.set_line_width(ONE*2.)
+    self.ctx.move_to(x1,y1)
+    self.ctx.line_to(x2,y2)
+    self.ctx.stroke()
+
+  def render_sandpaint_line(self,x1,y1,x2,y2,r):
+
+    dx = x1-x2
+    dy = y1-y2
+    a = arctan2(dy,dx)
+    dots = 2*int(r*N)
+    scales = linspace(0,r,dots)
+    xp = x1 - scales*cos(a) + rand(dots)*ONE*2.
+    yp = y1 - scales*sin(a) + rand(dots)*ONE*2.
+
+    self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
+
+    for x,y in zip(xp,yp):
+      self.ctx.rectangle(x,y,ONE,ONE) 
+      self.ctx.fill()
+
+  def render_sandpaint_color(self,x1,y1,x2,y2,r,k):
+
+    dx = x1 - x2
+    dy = y1 - y2
+    a = arctan2(dy,dx)
+    scales = rand(GRAINS)*r
+    xp = x1 - scales*cos(a)
+    yp = y1 - scales*sin(a)
+
+    r,g,b = self.colors[k%self.ncolors]
+    self.ctx.set_source_rgba(r,g,b,ALPHA)
+
+    for x,y in zip(xp,yp):
+      self.ctx.rectangle(x,y,ONE,ONE) 
+      self.ctx.fill()
 
 def near_zone_inds(x,y,Z):
   
@@ -82,6 +122,8 @@ def near_zone_inds(x,y,Z):
 
 def main():
 
+  render = Render(N)
+  render.get_colors('color/dark_cyan_white_black.gif')
 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
@@ -90,7 +132,6 @@ def main():
   X = np.zeros(nmax,dtype=np.float)
   Y = np.zeros(nmax,dtype=np.float)
   THE = np.zeros(nmax,dtype=np.float)
-
 
   X[0] = 0.5
   Y[0] = 0.5
@@ -138,42 +179,16 @@ def main():
         j = 1+int(y*ZONES) 
         Z[i*ZONES+j].append(num)
         
-        ## lines
-        ctx.set_source_rgba(FRONT,FRONT,FRONT)
-        ctx.set_line_width(2./N)
-        ctx.move_to(X[k],Y[k])
-        ctx.line_to(x,y)
-        ctx.stroke()
-       
-        ## sandpaint
-        #dx = X[k]-x
-        #dy = Y[k]-y
-        #a = arctan2(dy,dx)
-        #dots = 2*int(r*N)
-        #scales = linspace(0,r,dots)
-        #xp = X[k] - scales*cos(a) + rand(dots)*ONE*2.
-        #yp = Y[k] - scales*sin(a) + rand(dots)*ONE*2.
-
-        #ctx.set_source_rgba(FRONT,FRONT,FRONT)
-        #vstroke(xp,yp)
+        render.render_lines(X[k],Y[k],x,y)
+        #render_sandpaint_line(X[k],Y[k],x,y,r)
 
         num+=1
       else:
 
-
-        dx = X[k] - x
-        dy = Y[k] - y
-        a = arctan2(dy,dx)
-        scales = rand(GRAINS)*r
-        xp = X[k] - scales*cos(a)
-        yp = Y[k] - scales*sin(a)
-
-        r,g,b = colors[k%ncolors]
-        ctx.set_source_rgba(r,g,b,ALPHA)
-        vstroke(xp,yp)
+        render.render_sandpaint_color(X[k],Y[k],x,y,r,k)
         
       if not num % 1000 and not num==drawn:
-        sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
+        render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
         print itt, num, time()-ti
         ti = time()
         drawn = num
