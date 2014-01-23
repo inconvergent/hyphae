@@ -11,8 +11,6 @@ from operator import itemgetter
 any = np.any
 all = np.all
 
-# test
-
 PI = pi
 PII = 2*pi
 N = 4000
@@ -21,16 +19,17 @@ BACK = 1.
 FRONT = 0.
 MID = 0.5
 ALPHA = 0.2
-OUT = './img'
+
+filename = './img'
 
 RAD = 3./N;
 
 ZONES = 400
 
-OBJECTS = 5
-
-colors = [(0,0,0)]
-ncolors = 1
+print
+print 'filename',filename
+print 'N', N
+print 'one', ONE
 
 def stroke(x,y): 
   ctx.rectangle(x,y,ONE,ONE) 
@@ -46,6 +45,26 @@ def ctx_init():
   ctx.fill()
   return sur,ctx
 sur,ctx = ctx_init()
+
+def get_colors(f):
+  from random import shuffle
+  scale = 1./255.
+  im = Image.open(f)
+  w,h = im.size
+  rgbim = im.convert('RGB')
+  res = []
+  for i in xrange(0,w):
+    for j in xrange(0,h):
+      r,g,b = rgbim.getpixel((i,j))
+      res.append((r*scale,g*scale,b*scale))
+
+  shuffle(res)
+
+  return res
+colors = get_colors('color/dark_cyan_white_black.gif')
+ncolors = len(colors)
+print 'colors',  ncolors
+print
 
 def near_zone_inds(x,y,Z):
   
@@ -81,16 +100,6 @@ def main():
   ij = i*ZONES+j
   Z[ij].append(0)
 
-  ## blocking objects
-  #OR = np.zeros(OBJECTS,dtype=np.float)
-  #OX = np.zeros(OBJECTS,dtype=np.float)
-  #OY = np.zeros(OBJECTS,dtype=np.float)
-
-  #for i in xrange(OBJECTS):
-    #OR[i] = ONE*200
-    #OX[i] = rand()
-    #OY[i] = rand()
-
   num = 1
   itt = 0
   ti = time()
@@ -102,20 +111,10 @@ def main():
       itt += 1
 
       k = int(sqrt(rand())*num)
-      the = ( PI * (0.5-rand()) )+THE[k];
+      the = ( PI * (0.5-rand()) )+THE[k]
       r = RAD  + rand()*ONE*10.
-      x = X[k] + sin(the)*r;
-      y = Y[k] + cos(the)*r;
-
-      ## see if edge is blocked
-      #dd = square(OX-x) + \
-           #square(OY-y)
-      #sqrt(dd,dd)
-      #mask = dd*2 < OR
-      #blocked_by_object = mask.any()
-
-      #if blocked_by_object:
-        #continue
+      x = X[k] + sin(the)*r
+      y = Y[k] + cos(the)*r
       
       inds = near_zone_inds(x,y,Z)
 
@@ -158,9 +157,22 @@ def main():
         #vstroke(xp,yp)
 
         num+=1
+      #else:
+
+
+        #dx = X[k] - x
+        #dy = Y[k] - y
+        #a = arctan2(dy,dx)
+        #scales = rand(GRAINS)*r
+        #xp = X[k] - scales*cos(a)
+        #yp = Y[k] - scales*sin(a)
+
+        #r,g,b = colors[k%ncolors]
+        #ctx.set_source_rgba(r,g,b,ALPHA)
+        #vstroke(xp,yp)
         
       if not num % 1000 and not num==drawn:
-        sur.write_to_png('{:s}.{:d}.png'.format(OUT,num))
+        sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
         print itt, num, time()-ti
         ti = time()
         drawn = num
@@ -171,13 +183,11 @@ def main():
 
 if __name__ == '__main__':
   if True:
-    import pstats
-    import cProfile
+    import pstats, cProfile
     OUT = 'profile'
-    pfilename = '{:s}.profile'.format(OUT)
+    pfilename = 'profile.profile'
     cProfile.run('main()',pfilename)
     p = pstats.Stats(pfilename)
     p.strip_dirs().sort_stats('cumulative').print_stats()
   else:
     main()
-
