@@ -14,18 +14,20 @@ all = np.all
 PI = pi
 PII = 2*pi
 N = 4000
+ZONES = 400
 ONE = 1./N
 BACK = 1.
 FRONT = 0.
 MID = 0.5
-ALPHA = 0.05
 
 filename = 'res/img'
 
-RAD = 3./N;
+RAD = 3*ONE;
+R_RAND_SIZE = 10
+CK_MAX = 50
 
-ZONES = 400
-GRAINS = 5
+ALPHA = 0.05
+GRAINS = 7
 
 print
 print 'filename',filename
@@ -67,7 +69,7 @@ class Render(object):
     self.colors = res
     self.ncolors = len(res)
 
-  def render_lines(self,x1,y1,x2,y2):
+  def line(self,x1,y1,x2,y2):
 
     self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
     self.ctx.set_line_width(ONE*2.)
@@ -75,7 +77,7 @@ class Render(object):
     self.ctx.line_to(x2,y2)
     self.ctx.stroke()
 
-  def render_sandpaint_line(self,x1,y1,x2,y2,r):
+  def sandpaint_line(self,x1,y1,x2,y2,r):
 
     dx = x1-x2
     dy = y1-y2
@@ -91,7 +93,7 @@ class Render(object):
       self.ctx.rectangle(x,y,ONE,ONE) 
       self.ctx.fill()
 
-  def render_sandpaint_color(self,x1,y1,x2,y2,r,k):
+  def sandpaint_color_line(self,x1,y1,x2,y2,r,k):
 
     dx = x1 - x2
     dy = y1 - y2
@@ -107,7 +109,7 @@ class Render(object):
       self.ctx.rectangle(x,y,ONE,ONE) 
       self.ctx.fill()
 
-def near_zone_inds(x,y,Z):
+def near_zone_inds(x,y,Z,k):
   
   i = 1+int(x*ZONES) 
   j = 1+int(y*ZONES) 
@@ -116,7 +118,7 @@ def near_zone_inds(x,y,Z):
 
   it = itemgetter(*ij)
   its = it(Z)
-  inds = np.array([b for a in its for b in a ])
+  inds = np.array([b for a in its for b in a if not b==k])
 
   return inds
 
@@ -133,6 +135,8 @@ def main():
   Y = np.zeros(nmax,dtype=np.float)
   THE = np.zeros(nmax,dtype=np.float)
 
+  C = np.zeros(nmax,dtype=np.int)
+
   X[0] = 0.5
   Y[0] = 0.5
   THE[0] = RAD
@@ -147,26 +151,31 @@ def main():
   ti = time()
   drawn = -1
 
-
   while True:
     try:
       itt += 1
 
-      k = int(sqrt(rand())*num)
+      #k = int(sqrt(rand())*num)
+      k = int(rand()*num)
+      C[k] += 1
+
+      if C[k] > CK_MAX:
+        continue
+
       the = ( PI * (0.5-rand()) )+THE[k]
-      r = RAD  + rand()*ONE*10.
+      r = RAD  + rand()*ONE*R_RAND_SIZE
       x = X[k] + sin(the)*r
       y = Y[k] + cos(the)*r
       
-      inds = near_zone_inds(x,y,Z)
+      inds = near_zone_inds(x,y,Z,k)
+      #print inds,k
 
       good = True
       if len(inds)>0:
-        dd = square(X[inds]-x) + \
-             square(Y[inds]-y)
+        dd = square(X[inds]-x) + square(Y[inds]-y)
 
         sqrt(dd,dd)
-        mask = dd*2 >= R[inds] + r
+        mask = dd*2 >= (R[inds] + r)
         good = mask.all()
         
       if good: 
@@ -179,19 +188,22 @@ def main():
         j = 1+int(y*ZONES) 
         Z[i*ZONES+j].append(num)
         
-        render.render_lines(X[k],Y[k],x,y)
-        #render_sandpaint_line(X[k],Y[k],x,y,r)
+        ## dra things
+        #render.line(X[k],Y[k],x,y)
+        render.sandpaint_line(X[k],Y[k],x,y,r)
 
         num+=1
+
       else:
 
-        render.render_sandpaint_color(X[k],Y[k],x,y,r,k)
+        render.sandpaint_color_line(X[k],Y[k],x,y,r,k)
         
-      if not num % 1000 and not num==drawn:
+      if not num % 4000 and not num==drawn:
         render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
         print itt, num, time()-ti
         ti = time()
         drawn = num
+
     except KeyboardInterrupt:
       break
 
@@ -207,3 +219,4 @@ if __name__ == '__main__':
     p.strip_dirs().sort_stats('cumulative').print_stats()
   else:
     main()
+
