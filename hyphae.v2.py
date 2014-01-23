@@ -103,14 +103,14 @@ def main():
         ctx.set_source_rgba(0,0,0,0.5)
         ctx.stroke()
 
-  def neighborhood_matrix(voronoi):
+  def neighborhood_matrix(regions):
     
     ii = []
     jj = []
-    for i,indsi in enumerate(voronoi.regions):
+    for i,indsi in enumerate(regions):
       if indsi and not -1 in indsi:
         a = set(indsi)
-        for j,indsj in enumerate(voronoi.regions):
+        for j,indsj in enumerate(regions):
           if indsj and not -1 in indsj:
             b = set(indsj)
             
@@ -120,7 +120,7 @@ def main():
               ii.append(i)
               jj.append(j)
     
-    n = len(voronoi.regions)
+    n = len(regions)
     F = coo_matrix(([1]*len(ii),(ii,jj)), shape=(n,n)).tocsr()
 
     return F
@@ -219,36 +219,54 @@ def main():
   XY = colstack(( X[:num],Y[:num] ))
   voronoi = Voronoi(XY)
 
-  ctx.set_source_rgb(1,0,0)
-  vcirc( X[:num],Y[:num],ONE*1.5 )
+  #ctx.set_source_rgb(1,0,0)
+  #vcirc( X[:num],Y[:num],ONE*1.5 )
 
-  F = neighborhood_matrix(voronoi)
+  regions = [r for r in voronoi.regions if r]
+  F = neighborhood_matrix(regions)
 
-  food_index = ( rand(5)*num ).astype(np.int)
+  food_index = ( rand(4)*num ).astype(np.int)
 
   resources = zeros((num,),dtype=np.float) + 1.
-  resources_new = zeros(resources.shape,resources.dtype)
+  resources_new = zeros( resources.shape,resources.dtype )
 
   resources[food_index] += 1.
 
   for itt in xrange(100):
 
-    resources *= 0.98
+    #resources[np.isnan(resources)] = 0.
+    resources *= 0.97
     resources[food_index] += 1.
 
     for r in xrange(num):
 
-      resources_new[:] = 0.
+      resources_new[:] = resources[:]
 
       row = F.getrow(r)
       nz = row.nonzero()[1]
-      print nz
-      if nz.sum()>1:
-        resources_new[nz] = resources[nz].mean()
+      if nz.any(): 
+        resources_new[r] = resources[nz].mean()
 
       resources[:] = resources_new[:]
 
-  print resources, resources_new
+  notnan = np.logical_not(np.isnan(resources))
+  resources = resources / resources[notnan].max()
+  print resources
+
+  for r,w in enumerate(resources):
+    row = F.getrow(r)
+
+    inds = regions[r]
+    xy = voronoi.vertices[inds[0],:]
+    ctx.move_to(xy[0],xy[1])
+    for ind in inds[1:]:
+      xy = voronoi.vertices[ind,:]
+      ctx.line_to(xy[0],xy[1])
+
+    ctx.close_path()
+
+    ctx.set_source_rgb(w,w,w)
+    ctx.fill()
 
 
   ## done
