@@ -1,4 +1,4 @@
-about tracepath2
+about hyphae
 =============
 
 Generates root-like networks where no edges overlap. 
