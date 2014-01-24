@@ -14,20 +14,27 @@ all = np.all
 PI = pi
 PII = 2*pi
 N = 4000
-ZONES = 400
+ZONES = N/10
 ONE = 1./N
 BACK = 1.
 FRONT = 0.
 MID = 0.5
 
-filename = 'res/img'
+filename = 'res/test'
+
+#COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
+#COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
+COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 
 RAD = 3*ONE;
 R_RAND_SIZE = 10
-CK_MAX = 50
+CK_MAX = 15
 
-ALPHA = 0.05
-GRAINS = 7
+LINE_NOISE = 1.
+
+
+ALPHA = 0.5
+GRAINS = 3
 
 print
 print 'filename',filename
@@ -84,8 +91,8 @@ class Render(object):
     a = arctan2(dy,dx)
     dots = 2*int(r*N)
     scales = linspace(0,r,dots)
-    xp = x1 - scales*cos(a) + rand(dots)*ONE*2.
-    yp = y1 - scales*sin(a) + rand(dots)*ONE*2.
+    xp = x1 - scales*cos(a) + rand(dots)*ONE*LINE_NOISE
+    yp = y1 - scales*sin(a) + rand(dots)*ONE*LINE_NOISE
 
     self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
 
@@ -122,10 +129,17 @@ def near_zone_inds(x,y,Z,k):
 
   return inds
 
+def get_z(x,y):
+
+  i = 1+int(x*ZONES) 
+  j = 1+int(y*ZONES) 
+  z = i*ZONES+j
+  return z
+
 def main():
 
   render = Render(N)
-  render.get_colors('color/dark_cyan_white_black.gif')
+  render.get_colors(COLOR_FILENAME)
 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
@@ -137,16 +151,20 @@ def main():
 
   C = np.zeros(nmax,dtype=np.int)
 
-  X[0] = 0.5
-  Y[0] = 0.5
-  THE[0] = RAD
+  ## number of nodes
+  num = 0
 
-  i = 1+int(0.5*ZONES) 
-  j = 1+int(0.5*ZONES) 
-  ij = i*ZONES+j
-  Z[ij].append(0)
+  ## init
+  for i in xrange(3):
 
-  num = 1
+    X[i] = rand()
+    Y[i] = rand()
+    THE[i] = RAD + rand()*ONE*R_RAND_SIZE
+
+    z = get_z(X[i],Y[i])
+    Z[z].append(num)
+    num += 1
+
   itt = 0
   ti = time()
   drawn = -1
@@ -167,8 +185,14 @@ def main():
       x = X[k] + sin(the)*r
       y = Y[k] + cos(the)*r
       
-      inds = near_zone_inds(x,y,Z,k)
-      #print inds,k
+      ## if we are on the edge the zone mapping will fail.
+      ## retry. do not draw sandpaint_color_line
+      try:
+        inds = near_zone_inds(x,y,Z,k)
+      except IndexError:
+        continue
+        ## re-raise instead for the process to crash and burn.
+        #raise
 
       good = True
       if len(inds)>0:
@@ -184,11 +208,12 @@ def main():
         R[num] = r
         THE[num] = the
 
-        i = 1+int(x*ZONES) 
-        j = 1+int(y*ZONES) 
-        Z[i*ZONES+j].append(num)
+        z = get_z(x,y) 
+
+        ## populate the zone map
+        Z[z].append(num)
         
-        ## dra things
+        ## draw the things
         #render.line(X[k],Y[k],x,y)
         render.sandpaint_line(X[k],Y[k],x,y,r)
 
@@ -196,9 +221,10 @@ def main():
 
       else:
 
+        ## failed to add edge. draw colored edge
         render.sandpaint_color_line(X[k],Y[k],x,y,r,k)
         
-      if not num % 4000 and not num==drawn:
+      if not num % 1000 and not num==drawn:
         render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
         print itt, num, time()-ti
         ti = time()
