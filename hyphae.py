@@ -7,30 +7,35 @@ import numpy as np
 import cairo
 from time import time as time
 from operator import itemgetter
+from numpy.random import normal as norm
+
 
 any = np.any
 all = np.all
 
-PI = pi
-PII = 2*pi
-N = 4000
-ZONES = N/10
+N = 1000
+ZONES = N/20
 ONE = 1./N
 BACK = 1.
 FRONT = 0.
 MID = 0.5
 
+
 filename = 'res/test'
+DRAW_SKIP = 10000
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
-COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
+#COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
+COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
 RAD = 3*ONE;
 R_RAND_SIZE = 10
 CK_MAX = 15
 
 LINE_NOISE = 1.
+SEARCH_ANGLE = 0.3*pi
+SOURCE_NUM = 3
 
 
 ALPHA = 0.5
@@ -136,6 +141,14 @@ def get_z(x,y):
   z = i*ZONES+j
   return z
 
+def get_relative_search_angle():
+
+  a = norm()*SEARCH_ANGLE
+  #a = (0.5-rand())*SEARCH_ANGLE
+  
+  return a
+
+
 def main():
 
   render = Render(N)
@@ -155,7 +168,7 @@ def main():
   num = 0
 
   ## init
-  for i in xrange(3):
+  for i in xrange(SOURCE_NUM):
 
     X[i] = rand()
     Y[i] = rand()
@@ -173,14 +186,13 @@ def main():
     try:
       itt += 1
 
-      #k = int(sqrt(rand())*num)
       k = int(rand()*num)
       C[k] += 1
 
       if C[k] > CK_MAX:
         continue
 
-      the = ( PI * (0.5-rand()) )+THE[k]
+      the = get_relative_search_angle()+THE[k]
       r = RAD  + rand()*ONE*R_RAND_SIZE
       x = X[k] + sin(the)*r
       y = Y[k] + cos(the)*r
@@ -214,17 +226,19 @@ def main():
         Z[z].append(num)
         
         ## draw the things
-        #render.line(X[k],Y[k],x,y)
-        render.sandpaint_line(X[k],Y[k],x,y,r)
+        render.line(X[k],Y[k],x,y)
+        #render.sandpaint_line(X[k],Y[k],x,y,r)
 
         num+=1
 
       else:
 
+        pass
+
         ## failed to add edge. draw colored edge
-        render.sandpaint_color_line(X[k],Y[k],x,y,r,k)
+        #render.sandpaint_color_line(X[k],Y[k],x,y,r,k)
         
-      if not num % 1000 and not num==drawn:
+      if not num % DRAW_SKIP and not num==drawn:
         render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
         print itt, num, time()-ti
         ti = time()
