@@ -13,34 +13,39 @@ from numpy.random import normal as normal
 
 NMAX = 2*1e7 # maxmimum number of nodes
 SIZE = 1000
-ZONES = SIZE/20
 ONE = 1./SIZE
+
+RAD = 5*ONE # 
+ZONEWIDTH = 2*(RAD/ONE)
+
+ZONES = int(SIZE/ZONEWIDTH)
+#ZONES = SIZE/20
+
 BACK = 1.
 FRONT = 0.
 MID = 0.5
 
-X_MIN = 0+10*ONE # border
-Y_MIN = 0+10*ONE #
-X_MAX = 1-10*ONE #
-Y_MAX = 1-10*ONE #
+X_MIN = 0.+10.*ONE # border
+Y_MIN = 0.+10.*ONE #
+X_MAX = 1.-10.*ONE #
+Y_MAX = 1.-10.*ONE #
 
 filename = 'res/test'
-DRAW_SKIP = 100 # write image this often
+DRAW_SKIP = 200 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD = 10*ONE # 
 RAD_SCALE = 0.9
-R_RAND_SIZE = 7 
-CK_MAX = 7 # max number of allowed branch attempts from a node
+R_RAND_SIZE = 3.5
+CK_MAX = 10 # max number of allowed branch attempts from a node
 
 CIRCLE_RADIUS = 0.4
 
 SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 1
+SOURCE_NUM = 3
 
 ALPHA = 0.5
 GRAINS = 3
@@ -48,6 +53,9 @@ GRAINS = 3
 print
 print 'filename',filename
 print 'SIZE', SIZE
+print 'ZONEWIDTH', ZONEWIDTH
+print 'RAD', RAD
+print 'ZONES', ZONES
 print 'one', ONE
 
 
@@ -90,10 +98,14 @@ class Render(object):
 
   def line(self,x1,y1,x2,y2):
 
-    self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
-    self.ctx.set_line_width(ONE*2.)
+    #self.ctx.set_line_width(ONE*2.)
     self.ctx.move_to(x1,y1)
     self.ctx.line_to(x2,y2)
+    self.ctx.stroke()
+
+  def circle(self,x,y,r):
+
+    self.ctx.arc(x,y,r,0,pi*2.)
     self.ctx.stroke()
 
   def circles(self,x1,y1,x2,y2,r):
@@ -113,6 +125,7 @@ class Render(object):
     xp = x1-scale*cos(a)
     yp = y1-scale*sin(a)
 
+    ## random radius?
     for x,y in zip(xp,yp):
       self.ctx.arc(x,y,r,0,pi*2.) 
       self.ctx.fill()
@@ -200,9 +213,12 @@ def main():
 
     #X[i] = random()
     #Y[i] = random()
-    X[i] = 0.5
-    Y[i] = 0.5
-    THE[i] = random()*pi*2.
+    gamma = i*2*pi/3
+    X[i] = 0.5 + cos(gamma)*0.1
+    Y[i] = 0.5 + sin(gamma)*0.1
+
+    #THE[i] = random()*pi*2.
+    THE[i] = -gamma
     P[i] = -1 # no parent
     R[i] = RAD
 
@@ -219,6 +235,8 @@ def main():
     try:
 
       itt += 1
+      #print itt, num
+      added_new = False
 
       k = int(random()*num)
       C[k] += 1
@@ -241,8 +259,8 @@ def main():
       sa = normal()*(1.-r/(RAD+ONE))*pi
       the = sa+THE[k]
 
-      x = X[k] + sin(the)*r
-      y = Y[k] + cos(the)*r
+      x = X[k] + sin(the)*(r+R[k])
+      y = Y[k] + cos(the)*(r+R[k])
 
       ## stop nodes at edge of canvas
       #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
@@ -271,7 +289,7 @@ def main():
         dd = square(X[inds]-x) + square(Y[inds]-y)
 
         sqrt(dd,dd)
-        mask = dd*2 >= R[inds]+r
+        mask = dd >= R[inds]+r
         good = mask.all()
         
       if good: 
@@ -290,11 +308,17 @@ def main():
         Z[z].append(num)
 
         render.ctx.set_source_rgb(FRONT,FRONT,FRONT)
-        render.circles(X[k],Y[k],x,y,r*0.3)
+        render.circles(X[k],Y[k],x,y,r*0.8)
+
+        ## render node radii
+        #render.ctx.set_line_width(ONE)
+        #render.ctx.set_source_rgba(1,0,0,1)
+        #render.circle(x,y,r)
 
         num += 1
+        added_new = True
 
-        if not num % DRAW_SKIP:
+        if not num % DRAW_SKIP and added_new:
           render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
           print itt, num, time()-ti
           ti = time()
