@@ -1,49 +1,53 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from numpy import cos, sin, pi, arctan2, sqrt, square, int, linspace
-from numpy.random import random as rand
+from numpy import cos, sin, pi, arctan2, sqrt,\
+                  square, int, linspace, any, all
+from numpy.random import random as random
 import numpy as np
 import cairo
 from time import time as time
 from operator import itemgetter
-from numpy.random import normal as norm
+from numpy.random import normal as normal
 
 
-any = np.any
-all = np.all
-
-N = 1000
-ZONES = N/20
-ONE = 1./N
+NMAX = 2*1e7 # maxmimum number of nodes
+SIZE = 1000
+ZONES = SIZE/20
+ONE = 1./SIZE
 BACK = 1.
 FRONT = 0.
 MID = 0.5
 
+X_MIN = 0+10*ONE # border
+Y_MIN = 0+10*ONE #
+X_MAX = 1-10*ONE #
+Y_MAX = 1-10*ONE #
 
 filename = 'res/test'
-DRAW_SKIP = 10000
+DRAW_SKIP = 100 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
-COLOR_FILENAME = 'color/dark_green_leaf.gif'
+#COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD = 3*ONE;
-R_RAND_SIZE = 10
-CK_MAX = 15
+RAD = 10*ONE # 
+RAD_SCALE = 0.9
+R_RAND_SIZE = 7 
+CK_MAX = 7 # max number of allowed branch attempts from a node
 
-LINE_NOISE = 1.
-SEARCH_ANGLE = 0.3*pi
-SOURCE_NUM = 3
+CIRCLE_RADIUS = 0.4
 
+SEARCH_ANGLE = 0.22*pi
+SOURCE_NUM = 1
 
 ALPHA = 0.5
 GRAINS = 3
 
 print
 print 'filename',filename
-print 'N', N
+print 'SIZE', SIZE
 print 'one', ONE
 
 
@@ -60,6 +64,9 @@ class Render(object):
 
     self.sur = sur
     self.ctx = ctx
+
+    self.colors = ((0,0,0))
+    self.ncolors = 1
 
   def get_colors(self,f):
     
@@ -89,15 +96,36 @@ class Render(object):
     self.ctx.line_to(x2,y2)
     self.ctx.stroke()
 
+  def circles(self,x1,y1,x2,y2,r):
+
+    dx = x1-x2
+    dy = y1-y2
+    dd = sqrt(dx*dx+dy*dy)
+
+    n = int(dd/ONE)
+    n = n if n>6 else 6
+
+    a = arctan2(dy,dx)
+
+    #scale = random(n)*dd
+    scale = linspace(0,dd,n)
+
+    xp = x1-scale*cos(a)
+    yp = y1-scale*sin(a)
+
+    for x,y in zip(xp,yp):
+      self.ctx.arc(x,y,r,0,pi*2.) 
+      self.ctx.fill()
+
   def sandpaint_line(self,x1,y1,x2,y2,r):
 
     dx = x1-x2
     dy = y1-y2
     a = arctan2(dy,dx)
-    dots = 2*int(r*N)
+    dots = 2*int(r*SIZE)
     scales = linspace(0,r,dots)
-    xp = x1 - scales*cos(a) + rand(dots)*ONE*LINE_NOISE
-    yp = y1 - scales*sin(a) + rand(dots)*ONE*LINE_NOISE
+    xp = x1 - scales*cos(a) + random(dots)*ONE*LINE_NOISE
+    yp = y1 - scales*sin(a) + random(dots)*ONE*LINE_NOISE
 
     self.ctx.set_source_rgba(FRONT,FRONT,FRONT)
 
@@ -110,7 +138,7 @@ class Render(object):
     dx = x1 - x2
     dy = y1 - y2
     a = arctan2(dy,dx)
-    scales = rand(GRAINS)*r
+    scales = random(GRAINS)*r
     xp = x1 - scales*cos(a)
     yp = y1 - scales*sin(a)
 
@@ -144,25 +172,25 @@ def get_z(x,y):
 def get_relative_search_angle():
 
   a = norm()*SEARCH_ANGLE
-  #a = (0.5-rand())*SEARCH_ANGLE
+  #a = (0.5-random())*SEARCH_ANGLE
   
   return a
 
 
 def main():
 
-  render = Render(N)
-  render.get_colors(COLOR_FILENAME)
+  render = Render(SIZE)
+  #render.get_colors(COLOR_FILENAME)
 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
-  nmax = 2*1e7
-  R = np.zeros(nmax,dtype=np.float)
-  X = np.zeros(nmax,dtype=np.float)
-  Y = np.zeros(nmax,dtype=np.float)
-  THE = np.zeros(nmax,dtype=np.float)
-
-  C = np.zeros(nmax,dtype=np.int)
+  R = np.zeros(NMAX,'float')
+  X = np.zeros(NMAX,'float')
+  Y = np.zeros(NMAX,'float')
+  THE = np.zeros(NMAX,'float')
+  P = np.zeros(NMAX,'int')
+  C = np.zeros(NMAX,'int')
+  D = np.zeros(NMAX,'int')-1
 
   ## number of nodes
   num = 0
@@ -170,9 +198,13 @@ def main():
   ## init
   for i in xrange(SOURCE_NUM):
 
-    X[i] = rand()
-    Y[i] = rand()
-    THE[i] = rand()*pi*2.
+    #X[i] = random()
+    #Y[i] = random()
+    X[i] = 0.5
+    Y[i] = 0.5
+    THE[i] = random()*pi*2.
+    P[i] = -1 # no parent
+    R[i] = RAD
 
     z = get_z(X[i],Y[i])
     Z[z].append(num)
@@ -183,35 +215,63 @@ def main():
   drawn = -1
 
   while True:
+
     try:
+
       itt += 1
 
-      k = int(rand()*num)
+      k = int(random()*num)
       C[k] += 1
 
-      if C[k] > CK_MAX:
+      if C[k]>CK_MAX:
+
+        ## node is dead
         continue
 
-      the = get_relative_search_angle()+THE[k]
-      r = RAD  + rand()*ONE*R_RAND_SIZE
+      #r = RAD + random()*ONE*R_RAND_SIZE
+      r = R[k]*RAD_SCALE if D[k]>-1 else R[k]
+
+      if r<ONE*0.5:
+
+        ## node dies
+        C[k] = CK_MAX+1
+        continue
+
+      #sa = normal()*SEARCH_ANGLE
+      sa = normal()*(1.-r/(RAD+ONE))*pi
+      the = sa+THE[k]
+
       x = X[k] + sin(the)*r
       y = Y[k] + cos(the)*r
+
+      ## stop nodes at edge of canvas
+      #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+
+        ### node is outside canvas
+        #return True, False
+
+      ## stop nodes at edge of circle
+      ## remember to set initial node inside circle.
+      circle_rad = sqrt(square(x-0.5)+square(y-0.5))
+      if circle_rad>CIRCLE_RADIUS:
+
+        ## node is outside circle
+        continue
       
-      ## if we are on the edge the zone mapping will fail.
-      ## retry. do not draw sandpaint_color_line
       try:
+
         inds = near_zone_inds(x,y,Z,k)
       except IndexError:
+
+        ## node is outside zonemapped area
         continue
-        ## re-raise instead for the process to crash and burn.
-        #raise
 
       good = True
       if len(inds)>0:
         dd = square(X[inds]-x) + square(Y[inds]-y)
 
         sqrt(dd,dd)
-        mask = dd*2 >= (R[inds] + r)
+        mask = dd*2 >= R[inds]+r
         good = mask.all()
         
       if good: 
@@ -219,30 +279,26 @@ def main():
         Y[num] = y
         R[num] = r
         THE[num] = the
+        P[num] = k
+
+        ## set first descendant if node has no descendants
+        if D[k]<0:
+          D[k] = num
 
         z = get_z(x,y) 
 
-        ## populate the zone map
         Z[z].append(num)
-        
-        ## draw the things
-        render.line(X[k],Y[k],x,y)
-        #render.sandpaint_line(X[k],Y[k],x,y,r)
 
-        num+=1
+        render.ctx.set_source_rgb(FRONT,FRONT,FRONT)
+        render.circles(X[k],Y[k],x,y,r*0.3)
 
-      else:
+        num += 1
 
-        pass
-
-        ## failed to add edge. draw colored edge
-        #render.sandpaint_color_line(X[k],Y[k],x,y,r,k)
-        
-      if not num % DRAW_SKIP and not num==drawn:
-        render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
-        print itt, num, time()-ti
-        ti = time()
-        drawn = num
+        if not num % DRAW_SKIP:
+          render.sur.write_to_png('{:s}.{:d}.png'.format(filename,num))
+          print itt, num, time()-ti
+          ti = time()
+          drawn = num
 
     except KeyboardInterrupt:
       break
@@ -250,7 +306,7 @@ def main():
   return
 
 if __name__ == '__main__':
-  if True:
+  if False:
     import pstats, cProfile
     OUT = 'profile'
     pfilename = 'profile.profile'
