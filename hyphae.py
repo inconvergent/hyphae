@@ -12,11 +12,12 @@ from numpy.random import normal as normal
 
 
 NMAX = 2*1e7 # maxmimum number of nodes
-SIZE = 1000
+SIZE = 5000
 ONE = 1./SIZE
 
-RAD = 5*ONE # 
-ZONEWIDTH = 2*(RAD/ONE)
+RAD = 10.*ONE # 
+
+ZONEWIDTH = 2.*(RAD/ONE)
 
 ZONES = int(SIZE/ZONEWIDTH)
 #ZONES = SIZE/20
@@ -30,25 +31,26 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = 'res/test'
-DRAW_SKIP = 200 # write image this often
+filename = '/data/kp.hyphae/blocking'
+DRAW_SKIP = 2000 # write image this often
 
-#COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
+COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
 RAD_SCALE = 0.9
-R_RAND_SIZE = 3.5
-CK_MAX = 10 # max number of allowed branch attempts from a node
+R_RAND_SIZE = 6
+CK_MAX = 30 # max number of allowed branch attempts from a node
 
 CIRCLE_RADIUS = 0.4
 
 SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 3
+SOURCE_NUM = 20
 
-ALPHA = 0.5
-GRAINS = 3
+ALPHA = 0.09
+GRAINS = 10
+
 
 print
 print 'filename',filename
@@ -108,6 +110,11 @@ class Render(object):
     self.ctx.arc(x,y,r,0,pi*2.)
     self.ctx.stroke()
 
+  def circle_fill(self,x,y,r):
+
+    self.ctx.arc(x,y,r,0,pi*2.)
+    self.ctx.fill()
+
   def circles(self,x1,y1,x2,y2,r):
 
     dx = x1-x2
@@ -146,12 +153,13 @@ class Render(object):
       self.ctx.rectangle(x,y,ONE,ONE) 
       self.ctx.fill()
 
-  def sandpaint_color_line(self,x1,y1,x2,y2,r,k):
+  def sandpaint_color_line(self,x1,y1,x2,y2,k):
 
     dx = x1 - x2
     dy = y1 - y2
+    dd = sqrt(dx*dx+dy*dy)
     a = arctan2(dy,dx)
-    scales = random(GRAINS)*r
+    scales = random(GRAINS)*dd
     xp = x1 - scales*cos(a)
     yp = y1 - scales*sin(a)
 
@@ -193,7 +201,7 @@ def get_relative_search_angle():
 def main():
 
   render = Render(SIZE)
-  #render.get_colors(COLOR_FILENAME)
+  render.get_colors(COLOR_FILENAME)
 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
@@ -206,25 +214,41 @@ def main():
   D = np.zeros(NMAX,'int')-1
 
   ## number of nodes
-  num = 0
+  i = 0
 
-  ## init
-  for i in xrange(SOURCE_NUM):
+  ## initialize source nodes
+  while i<SOURCE_NUM:
 
+    ## in circle
+    x = random()
+    y = random()
+    if sqrt(square(x-0.5)+square(y-0.5))<0.3:
+      X[i] = x
+      Y[i] = y
+      R[i] = (RAD + 0.2*RAD*(1.-2.*random()))
+      P[i] = -1
+    else:
+
+      ## try again
+      continue
+
+    ## on canvas
     #X[i] = random()
     #Y[i] = random()
-    gamma = i*2*pi/3
-    X[i] = 0.5 + cos(gamma)*0.1
-    Y[i] = 0.5 + sin(gamma)*0.1
 
-    #THE[i] = random()*pi*2.
-    THE[i] = -gamma
+    ## on circle
+    #gamma = i*2.*pi/float(SOURCE_NUM)
+    #X[i] = 0.5 + cos(gamma)*0.1
+    #Y[i] = 0.5 + sin(gamma)*0.1
+
+    THE[i] = random()*pi*2.
     P[i] = -1 # no parent
     R[i] = RAD
-
     z = get_z(X[i],Y[i])
-    Z[z].append(num)
-    num += 1
+    Z[z].append(i)
+    i += 1
+
+  num = i
 
   itt = 0
   ti = time()
@@ -235,7 +259,9 @@ def main():
     try:
 
       itt += 1
-      #print itt, num
+      if not itt%1000:
+        print itt, num
+
       added_new = False
 
       k = int(random()*num)
@@ -262,19 +288,19 @@ def main():
       x = X[k] + sin(the)*(r+R[k])
       y = Y[k] + cos(the)*(r+R[k])
 
-      ## stop nodes at edge of canvas
-      #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+      # stop nodes at edge of canvas
+      if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
 
-        ### node is outside canvas
-        #return True, False
+        ## node is outside canvas
+        continue
 
       ## stop nodes at edge of circle
       ## remember to set initial node inside circle.
-      circle_rad = sqrt(square(x-0.5)+square(y-0.5))
-      if circle_rad>CIRCLE_RADIUS:
+      #circle_rad = sqrt(square(x-0.5)+square(y-0.5))
+      #if circle_rad>CIRCLE_RADIUS:
 
-        ## node is outside circle
-        continue
+        ### node is outside circle
+        #continue
       
       try:
 
@@ -289,7 +315,7 @@ def main():
         dd = square(X[inds]-x) + square(Y[inds]-y)
 
         sqrt(dd,dd)
-        mask = dd >= R[inds]+r
+        mask = dd > R[inds]+r
         good = mask.all()
         
       if good: 
@@ -308,9 +334,10 @@ def main():
         Z[z].append(num)
 
         render.ctx.set_source_rgb(FRONT,FRONT,FRONT)
-        render.circles(X[k],Y[k],x,y,r*0.8)
+        render.circles(X[k],Y[k],x,y,r*0.6)
 
-        ## render node radii
+
+        ### render node radii
         #render.ctx.set_line_width(ONE)
         #render.ctx.set_source_rgba(1,0,0,1)
         #render.circle(x,y,r)
@@ -323,6 +350,10 @@ def main():
           print itt, num, time()-ti
           ti = time()
           drawn = num
+
+      else:
+
+        render.sandpaint_color_line(X[k],Y[k],x,y,k)
 
     except KeyboardInterrupt:
       break
