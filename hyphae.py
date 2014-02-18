@@ -12,10 +12,10 @@ from numpy.random import normal as normal
 
 
 NMAX = 2*1e7 # maxmimum number of nodes
-SIZE = 5000
+SIZE = 20000
 ONE = 1./SIZE
 
-RAD = 10.*ONE # 
+RAD = 20.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -31,15 +31,15 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = '/data/kp.hyphae/blocking'
-DRAW_SKIP = 2000 # write image this often
+filename = 'aa'
+DRAW_SKIP = 5000 # write image this often
 
-COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
+#COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD_SCALE = 0.9
+RAD_SCALE = 0.95
 R_RAND_SIZE = 6
 CK_MAX = 30 # max number of allowed branch attempts from a node
 
@@ -201,7 +201,7 @@ def get_relative_search_angle():
 def main():
 
   render = Render(SIZE)
-  render.get_colors(COLOR_FILENAME)
+  #render.get_colors(COLOR_FILENAME)
 
   Z = [[] for i in xrange((ZONES+2)**2)]
 
@@ -220,21 +220,21 @@ def main():
   while i<SOURCE_NUM:
 
     ## in circle
-    x = random()
-    y = random()
-    if sqrt(square(x-0.5)+square(y-0.5))<0.3:
-      X[i] = x
-      Y[i] = y
-      R[i] = (RAD + 0.2*RAD*(1.-2.*random()))
-      P[i] = -1
-    else:
+    #x = random()
+    #y = random()
+    #if sqrt(square(x-0.5)+square(y-0.5))<0.3:
+      #X[i] = x
+      #Y[i] = y
+      #R[i] = (RAD + 0.2*RAD*(1.-2.*random()))
+      #P[i] = -1
+    #else:
 
-      ## try again
-      continue
+      ### try again
+      #continue
 
     ## on canvas
-    #X[i] = random()
-    #Y[i] = random()
+    X[i] = random()
+    Y[i] = random()
 
     ## on circle
     #gamma = i*2.*pi/float(SOURCE_NUM)
@@ -296,11 +296,11 @@ def main():
 
       ## stop nodes at edge of circle
       ## remember to set initial node inside circle.
-      #circle_rad = sqrt(square(x-0.5)+square(y-0.5))
-      #if circle_rad>CIRCLE_RADIUS:
+      circle_rad = sqrt(square(x-0.5)+square(y-0.5))
+      if circle_rad>CIRCLE_RADIUS:
 
-        ### node is outside circle
-        #continue
+        ## node is outside circle
+        continue
       
       try:
 
@@ -352,8 +352,9 @@ def main():
           drawn = num
 
       else:
+        pass
 
-        render.sandpaint_color_line(X[k],Y[k],x,y,k)
+        #render.sandpaint_color_line(X[k],Y[k],x,y,k)
 
     except KeyboardInterrupt:
       break
