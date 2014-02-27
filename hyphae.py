@@ -12,10 +12,10 @@ from numpy.random import normal as normal
 
 
 NMAX = 2*1e7 # maxmimum number of nodes
-SIZE = 2000
+SIZE = 15000
 ONE = 1./SIZE
 
-RAD = 20.*ONE # 
+RAD = 40.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -32,15 +32,14 @@ X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
 filename = 'generations_a'
-DRAW_SKIP = 2000 # write image this often
+DRAW_SKIP = 10000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD_SCALE = 0.90
-SEARCH_ANGLE = pi*0.9
+RAD_SCALE = 0.92
 SEARCH_ANGLE_MAX = pi
 
 R_RAND_SIZE = 6
