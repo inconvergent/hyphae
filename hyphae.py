@@ -12,10 +12,10 @@ from numpy.random import normal as normal
 
 
 NMAX = 2*1e7 # maxmimum number of nodes
-SIZE = 15000
+SIZE = 2000
 ONE = 1./SIZE
 
-RAD = 40.*ONE # 
+RAD = 20.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -31,18 +31,17 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = '15k_half_xad_rad25source9'
-DRAW_SKIP = 20000 # write image this often
+filename = 'generations_a'
+DRAW_SKIP = 2000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD_SCALE = 0.94
+RAD_SCALE = 0.90
 SEARCH_ANGLE = pi*0.9
-SEARCH_ANGLE_INIT = 0.07*pi
-SEARCH_ANGLE_SCALE = 1.09
+SEARCH_ANGLE_MAX = pi
 
 R_RAND_SIZE = 6
 CK_MAX = 15 # max number of allowed branch attempts from a node
@@ -195,14 +194,6 @@ def get_z(x,y):
   z = i*ZONES+j
   return z
 
-#def get_relative_search_angle():
-
-  #a = norm()*SEARCH_ANGLE
-  ##a = (0.5-random())*SEARCH_ANGLE
-  
-  #return a
-
-
 def main():
 
   render = Render(SIZE)
@@ -214,7 +205,7 @@ def main():
   X = np.zeros(NMAX,'float')
   Y = np.zeros(NMAX,'float')
   THE = np.zeros(NMAX,'float')
-  SA = np.zeros(NMAX,'float')
+  GE = np.zeros(NMAX,'float')
   P = np.zeros(NMAX,'int')
   C = np.zeros(NMAX,'int')
   D = np.zeros(NMAX,'int')-1
@@ -252,7 +243,7 @@ def main():
     #Y[i] = 0.5 + sin(gamma)*0.1
 
     THE[i] = random()*pi*2.
-    SA[i] = SEARCH_ANGLE_INIT
+    GE[i] = 1
     P[i] = -1 # no parent
     R[i] = RAD
     z = get_z(X[i],Y[i])
@@ -292,12 +283,8 @@ def main():
         C[k] = CK_MAX+1
         continue
 
-      #sa = normal()*SEARCH_ANGLE
-      #sa = normal()*(1.-r/(RAD+ONE))*SEARCH_ANGLE
-      #print (1.-r/(RAD+ONE))*SEARCH_ANGLE
-
-      sa = SA[k]*SEARCH_ANGLE_SCALE if D[k]>-1 else SA[k]
-      the = sa*normal()+THE[k]
+      ge = GE[k]+1 if D[k]>-1 else GE[k]
+      the = THE[k] + (1.-1./((ge+1)**0.1))*normal()*SEARCH_ANGLE_MAX
 
       #x = X[k] + sin(the)*(r+R[k])
       #y = Y[k] + cos(the)*(r+R[k])
@@ -342,7 +329,7 @@ def main():
         R[num] = r
         THE[num] = the
         P[num] = k
-        SA[num] = sa
+        GE[num] = ge
 
         ## set first descendant if node has no descendants
         if D[k]<0:
