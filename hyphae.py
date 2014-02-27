@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from numpy import cos, sin, pi, arctan2, sqrt,\
-                  square, int, linspace, any, all
+                  square, int, linspace, any, all, array
 from numpy.random import random as random
 import numpy as np
 import cairo
@@ -15,7 +15,7 @@ NMAX = 2*1e7 # maxmimum number of nodes
 SIZE = 15000
 ONE = 1./SIZE
 
-RAD = 25.*ONE # 
+RAD = 40.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -31,8 +31,8 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = '15k_aj_rad25source9'
-DRAW_SKIP = 15000 # write image this often
+filename = '15k_half_xad_rad25source9'
+DRAW_SKIP = 20000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
@@ -40,12 +40,15 @@ DRAW_SKIP = 15000 # write image this often
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
 RAD_SCALE = 0.94
+SEARCH_ANGLE = pi*0.9
+SEARCH_ANGLE_INIT = 0.07*pi
+SEARCH_ANGLE_SCALE = 1.09
+
 R_RAND_SIZE = 6
-CK_MAX = 30 # max number of allowed branch attempts from a node
+CK_MAX = 15 # max number of allowed branch attempts from a node
 
 CIRCLE_RADIUS = 0.45
 
-SEARCH_ANGLE = 0.29*pi
 SOURCE_NUM = 9
 
 ALPHA = 0.09
@@ -172,7 +175,7 @@ class Render(object):
       self.ctx.rectangle(x,y,ONE,ONE) 
       self.ctx.fill()
 
-def near_zone_inds(x,y,Z,k):
+def near_zone_inds(x,y,Z):
   
   i = 1+int(x*ZONES) 
   j = 1+int(y*ZONES) 
@@ -181,7 +184,7 @@ def near_zone_inds(x,y,Z,k):
 
   it = itemgetter(*ij)
   its = it(Z)
-  inds = np.array([b for a in its for b in a if not b==k])
+  inds = [b for a in its for b in a]
 
   return inds
 
@@ -192,12 +195,12 @@ def get_z(x,y):
   z = i*ZONES+j
   return z
 
-def get_relative_search_angle():
+#def get_relative_search_angle():
 
-  a = norm()*SEARCH_ANGLE
-  #a = (0.5-random())*SEARCH_ANGLE
+  #a = norm()*SEARCH_ANGLE
+  ##a = (0.5-random())*SEARCH_ANGLE
   
-  return a
+  #return a
 
 
 def main():
@@ -211,6 +214,7 @@ def main():
   X = np.zeros(NMAX,'float')
   Y = np.zeros(NMAX,'float')
   THE = np.zeros(NMAX,'float')
+  SA = np.zeros(NMAX,'float')
   P = np.zeros(NMAX,'int')
   C = np.zeros(NMAX,'int')
   D = np.zeros(NMAX,'int')-1
@@ -248,6 +252,7 @@ def main():
     #Y[i] = 0.5 + sin(gamma)*0.1
 
     THE[i] = random()*pi*2.
+    SA[i] = SEARCH_ANGLE_INIT
     P[i] = -1 # no parent
     R[i] = RAD
     z = get_z(X[i],Y[i])
@@ -288,11 +293,16 @@ def main():
         continue
 
       #sa = normal()*SEARCH_ANGLE
-      sa = normal()*(1.-r/(RAD+ONE))*pi
-      the = sa+THE[k]
+      #sa = normal()*(1.-r/(RAD+ONE))*SEARCH_ANGLE
+      #print (1.-r/(RAD+ONE))*SEARCH_ANGLE
 
-      x = X[k] + sin(the)*(r+R[k])
-      y = Y[k] + cos(the)*(r+R[k])
+      sa = SA[k]*SEARCH_ANGLE_SCALE if D[k]>-1 else SA[k]
+      the = sa*normal()+THE[k]
+
+      #x = X[k] + sin(the)*(r+R[k])
+      #y = Y[k] + cos(the)*(r+R[k])
+      x = X[k] + sin(the)*r
+      y = Y[k] + cos(the)*r
 
       # stop nodes at edge of canvas
       #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
@@ -310,7 +320,9 @@ def main():
       
       try:
 
-        inds = near_zone_inds(x,y,Z,k)
+        inds = near_zone_inds(x,y,Z)
+        inds = array([a for a in inds if not a==k and not a==P[k]])
+
       except IndexError:
 
         ## node is outside zonemapped area
@@ -321,7 +333,7 @@ def main():
         dd = square(X[inds]-x) + square(Y[inds]-y)
 
         sqrt(dd,dd)
-        mask = dd > R[inds]+r
+        mask = dd*2 > R[inds]+r
         good = mask.all()
         
       if good: 
@@ -330,6 +342,7 @@ def main():
         R[num] = r
         THE[num] = the
         P[num] = k
+        SA[num] = sa
 
         ## set first descendant if node has no descendants
         if D[k]<0:
@@ -340,7 +353,7 @@ def main():
         Z[z].append(num)
 
         render.ctx.set_source_rgb(FRONT,FRONT,FRONT)
-        render.circles(X[k],Y[k],x,y,r*0.6)
+        render.circles(X[k],Y[k],x,y,r*0.35)
 
 
         ### render node radii
