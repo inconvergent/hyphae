@@ -31,7 +31,7 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = 'generations_a'
+filename = 'generations_bh'
 DRAW_SKIP = 10000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
@@ -46,13 +46,12 @@ R_RAND_SIZE = 6
 CK_MAX = 15 # max number of allowed branch attempts from a node
 
 CIRCLE_RADIUS = 0.45
+INIT_CIRCLE = 0.45*0.6
 
 SOURCE_NUM = 9
 
 ALPHA = 0.09
 GRAINS = 10
-
-INIT_CIRCLE = 0.45
 
 
 print
