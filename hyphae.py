@@ -12,10 +12,10 @@ from numpy.random import normal as normal
 
 
 NMAX = 2*1e7 # maxmimum number of nodes
-SIZE = 20000
+SIZE = 15000
 ONE = 1./SIZE
 
-RAD = 20.*ONE # 
+RAD = 25.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -31,25 +31,27 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = 'aa'
-DRAW_SKIP = 5000 # write image this often
+filename = '15k_aj_rad25source9'
+DRAW_SKIP = 15000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
 #COLOR_FILENAME = 'color/light_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_brown_mushrooms.gif'
 #COLOR_FILENAME = 'color/dark_green_leaf.gif'
 
-RAD_SCALE = 0.95
+RAD_SCALE = 0.94
 R_RAND_SIZE = 6
 CK_MAX = 30 # max number of allowed branch attempts from a node
 
-CIRCLE_RADIUS = 0.4
+CIRCLE_RADIUS = 0.45
 
-SEARCH_ANGLE = 0.22*pi
-SOURCE_NUM = 20
+SEARCH_ANGLE = 0.29*pi
+SOURCE_NUM = 9
 
 ALPHA = 0.09
 GRAINS = 10
+
+INIT_CIRCLE = 0.45
 
 
 print
@@ -220,21 +222,25 @@ def main():
   while i<SOURCE_NUM:
 
     ## in circle
-    #x = random()
-    #y = random()
-    #if sqrt(square(x-0.5)+square(y-0.5))<0.3:
-      #X[i] = x
-      #Y[i] = y
-      #R[i] = (RAD + 0.2*RAD*(1.-2.*random()))
-      #P[i] = -1
-    #else:
+    x = random()
+    y = random()
+    if sqrt(square(x-0.5)+square(y-0.5))<INIT_CIRCLE:
+      X[i] = x
+      Y[i] = y
+      R[i] = (RAD + 0.2*RAD*(1.-2.*random()))
+      P[i] = -1
+    else:
 
-      ### try again
-      #continue
+      ## try again
+      continue
 
     ## on canvas
-    X[i] = random()
-    Y[i] = random()
+    #X[i] = random()
+    #Y[i] = random()
+
+    ## center
+    #X[i] = 0.5
+    #Y[i] = 0.5
 
     ## on circle
     #gamma = i*2.*pi/float(SOURCE_NUM)
@@ -260,7 +266,7 @@ def main():
 
       itt += 1
       if not itt%1000:
-        print itt, num
+        print itt, num, filename
 
       added_new = False
 
@@ -275,7 +281,7 @@ def main():
       #r = RAD + random()*ONE*R_RAND_SIZE
       r = R[k]*RAD_SCALE if D[k]>-1 else R[k]
 
-      if r<ONE*0.5:
+      if r<ONE:
 
         ## node dies
         C[k] = CK_MAX+1
@@ -289,10 +295,10 @@ def main():
       y = Y[k] + cos(the)*(r+R[k])
 
       # stop nodes at edge of canvas
-      if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
+      #if x>X_MAX or x<X_MIN or y>Y_MAX or y<Y_MIN:
 
         ## node is outside canvas
-        continue
+        #continue
 
       ## stop nodes at edge of circle
       ## remember to set initial node inside circle.
