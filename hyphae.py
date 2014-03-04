@@ -31,7 +31,7 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = 'generations_bh'
+filename = 'generations_bk'
 DRAW_SKIP = 10000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
