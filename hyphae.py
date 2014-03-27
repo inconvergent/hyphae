@@ -15,7 +15,7 @@ NMAX = 2*1e7 # maxmimum number of nodes
 SIZE = 15000
 ONE = 1./SIZE
 
-RAD = 40.*ONE # 
+RAD = 36.*ONE # 
 
 ZONEWIDTH = 2.*(RAD/ONE)
 
@@ -31,7 +31,7 @@ Y_MIN = 0.+10.*ONE #
 X_MAX = 1.-10.*ONE #
 Y_MAX = 1.-10.*ONE #
 
-filename = 'generations_bk'
+filename = 'rnd_generations_ca'
 DRAW_SKIP = 10000 # write image this often
 
 #COLOR_FILENAME = 'color/dark_cyan_white_black.gif'
@@ -137,6 +137,29 @@ class Render(object):
     ## random radius?
     for x,y in zip(xp,yp):
       self.ctx.arc(x,y,r,0,pi*2.) 
+      self.ctx.fill()
+
+  def circles_rand(self,x1,y1,x2,y2,r):
+
+    dx = x1-x2
+    dy = y1-y2
+    dd = sqrt(dx*dx+dy*dy)
+
+    n = int(dd/ONE)
+    n = n if n>6 else 6
+
+    a = arctan2(dy,dx)
+
+    #scale = random(n)*dd
+    scale = linspace(0,dd,n)
+
+    xp = x1-scale*cos(a)
+    yp = y1-scale*sin(a)
+
+    ## random radius?
+    for x,y in zip(xp,yp):
+      rscale = r * (0.7+0.3*random())
+      self.ctx.arc(x,y,rscale,0,pi*2.) 
       self.ctx.fill()
 
   def sandpaint_line(self,x1,y1,x2,y2,r):
@@ -338,7 +361,7 @@ def main():
         Z[z].append(num)
 
         render.ctx.set_source_rgb(FRONT,FRONT,FRONT)
-        render.circles(X[k],Y[k],x,y,r*0.35)
+        render.circles_rand(X[k],Y[k],x,y,r*0.39)
 
 
         ### render node radii
